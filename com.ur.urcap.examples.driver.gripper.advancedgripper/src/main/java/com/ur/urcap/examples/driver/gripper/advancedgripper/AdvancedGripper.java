@@ -1,5 +1,6 @@
 package com.ur.urcap.examples.driver.gripper.advancedgripper;
 
+import com.ur.urcap.api.contribution.driver.general.script.ScriptCodeGenerator;
 import com.ur.urcap.api.contribution.driver.general.tcp.TCPConfiguration;
 import com.ur.urcap.api.contribution.driver.general.userinput.CustomUserInputConfiguration;
 import com.ur.urcap.api.contribution.driver.gripper.ContributionConfiguration;
@@ -9,7 +10,10 @@ import com.ur.urcap.api.contribution.driver.gripper.GripperConfiguration;
 import com.ur.urcap.api.contribution.driver.gripper.GripperContribution;
 import com.ur.urcap.api.contribution.driver.gripper.ReleaseActionParameters;
 import com.ur.urcap.api.contribution.driver.gripper.SystemConfiguration;
+import com.ur.urcap.api.contribution.driver.gripper.capability.GripDetectedParameters;
 import com.ur.urcap.api.contribution.driver.gripper.capability.GripperCapabilities;
+import com.ur.urcap.api.contribution.driver.gripper.capability.GripperFeedbackCapabilities;
+import com.ur.urcap.api.contribution.driver.gripper.capability.ReleaseDetectedParameters;
 import com.ur.urcap.api.domain.resource.ControllableResourceModel;
 import com.ur.urcap.api.domain.script.ScriptWriter;
 import com.ur.urcap.api.domain.value.simple.Force;
@@ -43,10 +47,26 @@ public class AdvancedGripper implements GripperContribution {
 		registerWidth(gripperCapabilities);
 		registerVacuum(gripperCapabilities);
 		registerSpeed(gripperCapabilities);
+
+		GripperFeedbackCapabilities fc = gripperConfiguration.getGripperFeedbackCapabilities();
+
+		fc.registerGripDetectedCapability(new ScriptCodeGenerator<GripDetectedParameters>() {
+			@Override
+			public void generateScript(ScriptWriter scriptWriter, GripDetectedParameters parameters) {
+				scriptWriter.appendLine("return get_standard_digital_in(0)");
+			}
+		});
+
+		fc.registerReleaseDetectedCapability(new ScriptCodeGenerator<ReleaseDetectedParameters>() {
+			@Override
+			public void generateScript(ScriptWriter scriptWriter, ReleaseDetectedParameters parameters) {
+				scriptWriter.appendLine("return get_standard_digital_in(1)");
+			}
+		});
 	}
 
 	@Override
-	public void configureInstallation(CustomUserInputConfiguration customUserInputConfiguration, SystemConfiguration systemConfiguration,
+	public void configureInstallation(CustomUserInputConfiguration configurationUIBuilder, SystemConfiguration systemConfiguration,
 									  TCPConfiguration tcpConfiguration, GripperAPIProvider gripperAPIProvider) {
 		ControllableResourceModel resourceModel = systemConfiguration.getControllableResourceModel();
 
@@ -60,12 +80,12 @@ public class AdvancedGripper implements GripperContribution {
 
 	@Override
 	public void generateGripActionScript(ScriptWriter scriptWriter, GripActionParameters gripActionParameters) {
-		scriptWriter.appendLine("popup(\"Grip action <br/><br/>" + printCapabilityParameters(gripActionParameters) + "\")");
+		System.out.println("Grip action :" + printCapabilityParameters(gripActionParameters));
 	}
 
 	@Override
 	public void generateReleaseActionScript(ScriptWriter scriptWriter, ReleaseActionParameters releaseActionParameters) {
-		scriptWriter.appendLine("popup(\"Release action <br/><br/>" + printCapabilityParameters(releaseActionParameters) + "\")");
+		System.out.println("Release action :" + printCapabilityParameters(releaseActionParameters));
 	}
 
 	private void registerWidth(GripperCapabilities capability) {
@@ -85,17 +105,17 @@ public class AdvancedGripper implements GripperContribution {
 	}
 
 	private String printCapabilityParameters(GripActionParameters gripActionParameters) {
-		return "<b>Parameters</b> <br/>" +
-				printWidthCapabilityParameter(gripActionParameters.getWidth()) + "<br/>" +
-				printSpeedCapabilityParameter(gripActionParameters.getSpeed()) + "<br/>" +
-				printForceCapabilityParameter(gripActionParameters.getForce()) + "<br/>" +
-				printVacuumCapabilityParameter(gripActionParameters.getVacuum());
+		return "\n" +
+				printWidthCapabilityParameter(gripActionParameters.getWidth()) + "\n" +
+				printSpeedCapabilityParameter(gripActionParameters.getSpeed()) + "\n" +
+				printForceCapabilityParameter(gripActionParameters.getForce()) + "\n" +
+				printVacuumCapabilityParameter(gripActionParameters.getVacuum()) + "\n";
 	}
 
 	private String printCapabilityParameters(ReleaseActionParameters releaseActionParameters) {
-		return "<b>Parameters</b> <br/>" +
-				printWidthCapabilityParameter(releaseActionParameters.getWidth()) + "<br/>" +
-				printSpeedCapabilityParameter(releaseActionParameters.getSpeed());
+		return "\n" +
+				printWidthCapabilityParameter(releaseActionParameters.getWidth()) + "\n" +
+				printSpeedCapabilityParameter(releaseActionParameters.getSpeed()) + "\n";
 	}
 
 	String printWidthCapabilityParameter(Length width) {
